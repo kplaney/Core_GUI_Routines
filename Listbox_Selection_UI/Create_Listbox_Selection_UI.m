@@ -1,0 +1,76 @@
+
+function listbox_handle  = Create_Listbox_Selection_UI(parent_handle, listbox_entries, listbox_selection_idx, selection_callback, varargin)
+
+listbox_height = 0.9;
+predefined_filters = [];
+filter_function_handle = [];
+
+% Check num of arguments passed and initalise missing arguments
+if nargin < 2
+	uiwait(errordlg('Insufficient arguments passed to %s', mfilename));
+	return;
+elseif nargin == 2
+	listbox_selection_idx = [];
+	selection_callback = [];
+elseif nargin == 3
+	selection_callback = [];
+end
+
+% Read in optional arguments and check we have the right number
+if length(varargin) == 1
+	uiwait(errordlg('Optional arguments are a cell array of predefined filter strings AND corresponding function handle', mfilename));
+elseif length(varargin) == 2
+	if iscellstr(varargin{1})
+		predefined_filters = varargin{1};
+		listbox_height = 0.8;  % reduce listbox height so that we have vertical space for the extra pulldown menu
+	else
+		uiwait(errordlg('First optional argument should be a cell array of predefined filter strings', mfilename));
+	end
+	
+	if isa(varargin{2}, 'function_handle')
+		filter_function_handle = varargin{2};
+	else
+		uiwait(errordlg('Second optional argument should be a valid functional handle', mfilename));
+	end
+end
+
+GUI_color = get(0, 'defaultUicontrolBackgroundColor');
+listbox_color = [0.8 0.8 0.8];
+
+% Set up the listbox
+listbox_handle = uicontrol('style', 'listbox', 'String', listbox_entries, ...
+						   						 'Value', listbox_selection_idx, 'ListboxTop', 1, ...
+                           'Fontunits', 'normalized', 'Fontsize', 0.03, ...
+                           'BackgroundColor', listbox_color, 'Max', 2, 'Min', 0, ...
+                           'Units', 'normalized', 'Position', [0 0 1 listbox_height], ...
+                           'HorizontalAlignment', 'left', ...
+                           'Callback', selection_callback, 'Parent', parent_handle);
+
+% Set up a selection filter text box
+uicontrol('style', 'text', 'HorizontalAlignment', 'left', ...
+		  		'String', 'Selection filter: ', 'BackgroundColor', GUI_color, ...
+		  		'Fontunits', 'normalized', 'Fontsize', 0.5, ...
+		  		'Units', 'normalized', 'Position', [0 listbox_height+0.02 0.25 0.05], ...
+		  		'Parent', parent_handle);
+
+uicontrol('style', 'edit', 'String', [], 'BackgroundColor', GUI_color, ...
+		  		'Fontunits', 'normalized', 'Fontsize', 0.5, ...
+		  		'Units', 'normalized', 'Position', [0.32 listbox_height+0.025 0.6 0.05], ...
+		  		'Callback', {@select_listbox_entires_with_filter_string, listbox_handle}, ...
+		  		'Parent', parent_handle);
+
+% Optionally add a pulldown menu with pre-defined selection filters		
+if ~isempty(predefined_filters)
+	uicontrol('style', 'text', 'HorizontalAlignment', 'left', ...
+						'String', 'Pre-defined filter: ', 'BackgroundColor', GUI_color, ...
+						'Fontunits', 'normalized', 'Fontsize', 0.5, ...
+						'Units', 'normalized', 'Position', [0 listbox_height+0.12 0.25 0.05], ...
+						'Parent', parent_handle);
+
+	uicontrol('style', 'popupmenu', 'String', {[], predefined_filters{:}}, ...
+						'BackgroundColor', GUI_color, ...
+						'Fontunits', 'normalized', 'Fontsize', 0.5, ...
+						'Units', 'normalized', 'Position', [0.32 listbox_height+0.125 0.4 0.05], ...
+						'Callback', {@select_listbox_entries_with_predefined_filter, listbox_handle, filter_function_handle}, ...
+						'Parent', parent_handle);
+end
